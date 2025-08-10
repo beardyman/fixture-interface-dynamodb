@@ -1,7 +1,7 @@
 'use strict';
 
 const { expect } = require('chai');
-const { GetCommand, ScanCommand, PutCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+const { GetCommand, ScanCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const DynamoDBTestHelper = require('./dynamodb-helper');
 const DynamoFx = require('../../index');
 
