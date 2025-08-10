@@ -235,7 +235,7 @@ npm run open:cov:functional # Open functional test coverage
 
 ## License
 
-ISC
+MIT
 
 ## Contributing
 
