@@ -1,6 +1,6 @@
 {
   "name": "@beardyman/fixture-interface-dynamodb",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "DynamoDB interface implementation extending the fixture-interface library",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
