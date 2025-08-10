@@ -16,11 +16,13 @@
     "test": "test"
   },
   "dependencies": {
-    "aws-sdk": "^2.1692.0",
+    "@aws-sdk/client-dynamodb": "^3.864.0",
+    "@aws-sdk/lib-dynamodb": "^3.864.0",
     "fixture-interface": "^1.1.0"
   },
   "devDependencies": {
     "chai": "^4.3.7",
+    "dynamodb-local": "^0.0.35",
     "mocha": "^10.2.0",
     "nyc": "^15.1.0",
     "proxyquire": "^2.1.3",
@@ -34,8 +36,13 @@
     "build:cjs": "mkdir -p dist/cjs && cp index.js dist/cjs/index.js",
     "build:esm": "node scripts/build-esm.js",
     "build:types": "node scripts/generate-dts.js",
-    "test": "nyc --reporter=html --reporter=text --reporter=lcov --report-dir=test/reports mocha test/**/*.spec.js",
+    "test": "npm run test:unit && npm run test:functional",
+    "test:unit": "nyc --reporter=html --reporter=text --reporter=lcov --report-dir=test/reports/unit mocha test/unit/*.spec.js",
+    "test:functional": "nyc --reporter=html --reporter=text --reporter=lcov --report-dir=test/reports/functional mocha test/functional/*.spec.js",
+    "test:all": "nyc --reporter=html --reporter=text --reporter=lcov --report-dir=test/reports mocha test/**/*.spec.js",
     "open:cov": "open test/reports/index.html",
+    "open:cov:unit": "open test/reports/unit/index.html",
+    "open:cov:functional": "open test/reports/functional/index.html",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

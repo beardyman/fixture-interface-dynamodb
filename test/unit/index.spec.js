@@ -12,29 +12,36 @@ chai.use(sinonChai);
 describe('DynamoFx', () => {
   let DynamoFx;
   let mockDocumentClient;
-  let mockAws;
-  let mockFx;
+  let mockDynamoDBClient;
+  let mockDynamoDBDocument;
   let sandbox;
 
   beforeEach(() => {
     sandbox = sinon.createSandbox();
 
-    // Mock the DocumentClient
+    // Mock the DynamoDBDocument client
     mockDocumentClient = {
-      putAsync: sandbox.stub(),
-      deleteAsync: sandbox.stub()
+      put: sandbox.stub(),
+      delete: sandbox.stub(),
+      get: sandbox.stub()
     };
 
-    // Mock AWS SDK
-    mockAws = {
-      DynamoDB: {
-        DocumentClient: sandbox.stub().returns(mockDocumentClient)
-      }
+    // Mock DynamoDBClient
+    mockDynamoDBClient = sandbox.stub();
+
+    // Mock DynamoDBDocument
+    mockDynamoDBDocument = {
+      from: sandbox.stub().returns(mockDocumentClient)
     };
 
     // Load DynamoFx with mocked dependencies
     DynamoFx = proxyquire('../../index.js', {
-      'aws-sdk': mockAws
+      '@aws-sdk/client-dynamodb': {
+        DynamoDBClient: mockDynamoDBClient
+      },
+      '@aws-sdk/lib-dynamodb': {
+        DynamoDBDocument: mockDynamoDBDocument
+      }
     });
   });
 
@@ -61,20 +68,31 @@ describe('DynamoFx', () => {
       expect(instance.tableName).to.equal(tableName);
     });
 
-    it('should create DocumentClient with provided config', () => {
+    it('should create DynamoDBClient with provided config', () => {
       const connConfig = {
         region: 'us-west-2',
-        accessKeyId: 'test-key',
-        secretAccessKey: 'test-secret'
+        credentials: {
+          accessKeyId: 'test-key',
+          secretAccessKey: 'test-secret'
+        }
       };
       const tableName = 'test-table';
 
       new DynamoFx(connConfig, tableName);
 
-      expect(mockAws.DynamoDB.DocumentClient).to.have.been.calledOnceWith(connConfig);
+      expect(mockDynamoDBClient).to.have.been.calledOnceWith(connConfig);
     });
 
-    it('should store DocumentClient instance', () => {
+    it('should create DynamoDBDocument from base client', () => {
+      const connConfig = { region: 'us-east-1' };
+      const tableName = 'test-table';
+
+      new DynamoFx(connConfig, tableName);
+
+      expect(mockDynamoDBDocument.from).to.have.been.calledOnce;
+    });
+
+    it('should store DynamoDBDocument instance', () => {
       const connConfig = { region: 'us-east-1' };
       const tableName = 'test-table';
 
@@ -89,7 +107,7 @@ describe('DynamoFx', () => {
 
       const instance = new DynamoFx(connConfig, tableName);
 
-      expect(mockAws.DynamoDB.DocumentClient).to.have.been.calledOnceWith(connConfig);
+      expect(mockDynamoDBClient).to.have.been.calledOnceWith(connConfig);
       expect(instance.tableName).to.equal(tableName);
       expect(instance.db).to.equal(mockDocumentClient);
     });
@@ -104,21 +122,21 @@ describe('DynamoFx', () => {
       dynamoFx = new DynamoFx(connConfig, tableName);
     });
 
-    it('should call DocumentClient putAsync with correct parameters', async () => {
+    it('should call DynamoDBDocument put with correct parameters', async () => {
       const item = { id: '123', name: 'test item', value: 42 };
 
       await dynamoFx.insert(item);
 
-      expect(mockDocumentClient.putAsync).to.have.been.calledOnceWith({
+      expect(mockDocumentClient.put).to.have.been.calledOnceWith({
         TableName: 'test-table',
         Item: item
       });
     });
 
-    it('should return the promise from putAsync', () => {
+    it('should return the promise from put', () => {
       const item = { id: '456', data: 'test' };
       const expectedPromise = Promise.resolve({ ConsumedCapacity: {} });
-      mockDocumentClient.putAsync.returns(expectedPromise);
+      mockDocumentClient.put.returns(expectedPromise);
 
       const result = dynamoFx.insert(item);
 
@@ -138,7 +156,7 @@ describe('DynamoFx', () => {
 
       await dynamoFx.insert(complexItem);
 
-      expect(mockDocumentClient.putAsync).to.have.been.calledOnceWith({
+      expect(mockDocumentClient.put).to.have.been.calledOnceWith({
         TableName: 'test-table',
         Item: complexItem
       });
@@ -148,12 +166,12 @@ describe('DynamoFx', () => {
       await dynamoFx.insert(null);
       await dynamoFx.insert(undefined);
 
-      expect(mockDocumentClient.putAsync).to.have.been.calledTwice;
-      expect(mockDocumentClient.putAsync.firstCall).to.have.been.calledWith({
+      expect(mockDocumentClient.put).to.have.been.calledTwice;
+      expect(mockDocumentClient.put.firstCall).to.have.been.calledWith({
         TableName: 'test-table',
         Item: null
       });
-      expect(mockDocumentClient.putAsync.secondCall).to.have.been.calledWith({
+      expect(mockDocumentClient.put.secondCall).to.have.been.calledWith({
         TableName: 'test-table',
         Item: undefined
       });
@@ -169,21 +187,21 @@ describe('DynamoFx', () => {
       dynamoFx = new DynamoFx(connConfig, tableName);
     });
 
-    it('should call DocumentClient deleteAsync with correct parameters', async () => {
+    it('should call DynamoDBDocument delete with correct parameters', async () => {
       const key = { id: '123' };
 
       await dynamoFx.remove(key);
 
-      expect(mockDocumentClient.deleteAsync).to.have.been.calledOnceWith({
+      expect(mockDocumentClient.delete).to.have.been.calledOnceWith({
         TableName: 'test-table',
         Key: key
       });
     });
 
-    it('should return the promise from deleteAsync', () => {
+    it('should return the promise from delete', () => {
       const key = { id: '456' };
       const expectedPromise = Promise.resolve({ ConsumedCapacity: {} });
-      mockDocumentClient.deleteAsync.returns(expectedPromise);
+      mockDocumentClient.delete.returns(expectedPromise);
 
       const result = dynamoFx.remove(key);
 
@@ -198,7 +216,7 @@ describe('DynamoFx', () => {
 
       await dynamoFx.remove(compositeKey);
 
-      expect(mockDocumentClient.deleteAsync).to.have.been.calledOnceWith({
+      expect(mockDocumentClient.delete).to.have.been.calledOnceWith({
         TableName: 'test-table',
         Key: compositeKey
       });
@@ -209,7 +227,7 @@ describe('DynamoFx', () => {
 
       await dynamoFx.remove(stringKey);
 
-      expect(mockDocumentClient.deleteAsync).to.have.been.calledOnceWith({
+      expect(mockDocumentClient.delete).to.have.been.calledOnceWith({
         TableName: 'test-table',
         Key: stringKey
       });
@@ -219,15 +237,96 @@ describe('DynamoFx', () => {
       await dynamoFx.remove(null);
       await dynamoFx.remove(undefined);
 
-      expect(mockDocumentClient.deleteAsync).to.have.been.calledTwice;
-      expect(mockDocumentClient.deleteAsync.firstCall).to.have.been.calledWith({
+      expect(mockDocumentClient.delete).to.have.been.calledTwice;
+      expect(mockDocumentClient.delete.firstCall).to.have.been.calledWith({
         TableName: 'test-table',
         Key: null
       });
-      expect(mockDocumentClient.deleteAsync.secondCall).to.have.been.calledWith({
+      expect(mockDocumentClient.delete.secondCall).to.have.been.calledWith({
         TableName: 'test-table',
         Key: undefined
       });
+    });
+  });
+
+  describe('get', () => {
+    let dynamoFx;
+    
+    beforeEach(() => {
+      const connConfig = { region: 'us-east-1' };
+      const tableName = 'test-table';
+      dynamoFx = new DynamoFx(connConfig, tableName);
+    });
+
+    it('should call DynamoDBDocument get with correct parameters', async () => {
+      const key = { id: '123' };
+
+      await dynamoFx.get(key);
+
+      expect(mockDocumentClient.get).to.have.been.calledOnceWith({
+        TableName: 'test-table',
+        Key: key
+      });
+    });
+
+    it('should return the promise from get', () => {
+      const key = { id: '456' };
+      const expectedPromise = Promise.resolve({ Item: { id: '456', data: 'test' } });
+      mockDocumentClient.get.returns(expectedPromise);
+
+      const result = dynamoFx.get(key);
+
+      expect(result).to.equal(expectedPromise);
+    });
+
+    it('should handle composite keys', async () => {
+      const compositeKey = {
+        partitionKey: 'pk-123',
+        sortKey: 'sk-456'
+      };
+
+      await dynamoFx.get(compositeKey);
+
+      expect(mockDocumentClient.get).to.have.been.calledOnceWith({
+        TableName: 'test-table',
+        Key: compositeKey
+      });
+    });
+
+    it('should handle string keys', async () => {
+      const stringKey = 'simple-key';
+
+      await dynamoFx.get(stringKey);
+
+      expect(mockDocumentClient.get).to.have.been.calledOnceWith({
+        TableName: 'test-table',
+        Key: stringKey
+      });
+    });
+
+    it('should handle null/undefined keys', async () => {
+      await dynamoFx.get(null);
+      await dynamoFx.get(undefined);
+
+      expect(mockDocumentClient.get).to.have.been.calledTwice;
+      expect(mockDocumentClient.get.firstCall).to.have.been.calledWith({
+        TableName: 'test-table',
+        Key: null
+      });
+      expect(mockDocumentClient.get.secondCall).to.have.been.calledWith({
+        TableName: 'test-table',
+        Key: undefined
+      });
+    });
+
+    it('should handle non-existent items', async () => {
+      const key = { id: 'non-existent' };
+      const expectedPromise = Promise.resolve({});
+      mockDocumentClient.get.returns(expectedPromise);
+
+      const result = await dynamoFx.get(key);
+
+      expect(result).to.deep.equal({});
     });
   });
 
@@ -266,17 +365,17 @@ describe('DynamoFx', () => {
       const item = { id: 'seq-123', name: 'sequence test' };
       const key = { id: 'seq-123' };
 
-      mockDocumentClient.putAsync.resolves({ ConsumedCapacity: {} });
-      mockDocumentClient.deleteAsync.resolves({ ConsumedCapacity: {} });
+      mockDocumentClient.put.resolves({ ConsumedCapacity: {} });
+      mockDocumentClient.delete.resolves({ ConsumedCapacity: {} });
 
       await dynamoFx.insert(item);
       await dynamoFx.remove(key);
 
-      expect(mockDocumentClient.putAsync).to.have.been.calledOnceWith({
+      expect(mockDocumentClient.put).to.have.been.calledOnceWith({
         TableName: 'integration-table',
         Item: item
       });
-      expect(mockDocumentClient.deleteAsync).to.have.been.calledOnceWith({
+      expect(mockDocumentClient.delete).to.have.been.calledOnceWith({
         TableName: 'integration-table',
         Key: key
       });
@@ -291,9 +390,9 @@ describe('DynamoFx', () => {
       dynamoFx.insert(item2);
       dynamoFx.remove(key1);
 
-      expect(mockDocumentClient.putAsync.firstCall.args[0].TableName).to.equal('integration-table');
-      expect(mockDocumentClient.putAsync.secondCall.args[0].TableName).to.equal('integration-table');
-      expect(mockDocumentClient.deleteAsync.firstCall.args[0].TableName).to.equal('integration-table');
+      expect(mockDocumentClient.put.firstCall.args[0].TableName).to.equal('integration-table');
+      expect(mockDocumentClient.put.secondCall.args[0].TableName).to.equal('integration-table');
+      expect(mockDocumentClient.delete.firstCall.args[0].TableName).to.equal('integration-table');
     });
 
     it('should handle different table instances independently', () => {
@@ -305,9 +404,9 @@ describe('DynamoFx', () => {
       dynamoFx.insert(item);
       dynamoFx2.insert(item);
 
-      expect(mockDocumentClient.putAsync).to.have.been.calledTwice;
-      expect(mockDocumentClient.putAsync.firstCall.args[0].TableName).to.equal('integration-table');
-      expect(mockDocumentClient.putAsync.secondCall.args[0].TableName).to.equal('different-table');
+      expect(mockDocumentClient.put).to.have.been.calledTwice;
+      expect(mockDocumentClient.put.firstCall.args[0].TableName).to.equal('integration-table');
+      expect(mockDocumentClient.put.secondCall.args[0].TableName).to.equal('different-table');
     });
   });
 
@@ -320,10 +419,10 @@ describe('DynamoFx', () => {
       dynamoFx = new DynamoFx(connConfig, tableName);
     });
 
-    it('should propagate putAsync errors', async () => {
+    it('should propagate put errors', async () => {
       const item = { id: 'error-123' };
       const expectedError = new Error('DynamoDB put failed');
-      mockDocumentClient.putAsync.rejects(expectedError);
+      mockDocumentClient.put.rejects(expectedError);
 
       try {
         await dynamoFx.insert(item);
@@ -333,13 +432,26 @@ describe('DynamoFx', () => {
       }
     });
 
-    it('should propagate deleteAsync errors', async () => {
+    it('should propagate delete errors', async () => {
       const key = { id: 'error-456' };
       const expectedError = new Error('DynamoDB delete failed');
-      mockDocumentClient.deleteAsync.rejects(expectedError);
+      mockDocumentClient.delete.rejects(expectedError);
 
       try {
         await dynamoFx.remove(key);
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).to.equal(expectedError);
+      }
+    });
+
+    it('should propagate get errors', async () => {
+      const key = { id: 'error-789' };
+      const expectedError = new Error('DynamoDB get failed');
+      mockDocumentClient.get.rejects(expectedError);
+
+      try {
+        await dynamoFx.get(key);
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).to.equal(expectedError);
