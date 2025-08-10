@@ -3,3 +3,4 @@ node_modules/
 dist/
 reports/
 .nyc_output
+.claude
