@@ -1,0 +1,72 @@
+# Test files and coverage
+test/
+*.spec.js
+*.test.js
+coverage/
+.nyc_output/
+
+# Test reports
+test/reports/
+
+# Development files
+.git/
+.gitignore
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node modules (should be excluded by default but being explicit)
+node_modules/
+
+# Build artifacts that shouldn't be published
+*.tgz
+
+# Local configuration files
+CLAUDE.local.md
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+
+# Documentation that's not needed in package
+docs/
+*.md.backup
+
+# CI/CD files
+.github/
+.travis.yml
+.circleci/
+azure-pipelines.yml
+
+# Linting and formatting
+.eslintrc*
+.prettierrc*
+.editorconfig
+
+# Lock files (let users choose their package manager)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Scripts directory (build scripts not needed in package)
+scripts/
