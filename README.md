@@ -1,6 +1,6 @@
 # @beardyman/fixture-interface-dynamodb
 
-A DynamoDB implementation of the [fixture-interface](https://github.com/your-org/fixture-interface) library for test data management. This package provides a simple, consistent API for setting up and tearing down DynamoDB test data using the fixture pattern.
+A DynamoDB implementation of the [fixture-interface](https://github.com/beardyman/fixture-interface) library for test data management. This package provides a simple, consistent API for setting up and tearing down DynamoDB test data using the fixture pattern.
 
 ## Features
 
